@@ -3,4 +3,4 @@
 
 # Code is rewriten from a Go module
 
-This code id rewriten of [Go module for User Agent Parser V1.3.3] (https://github.com/mileusna/useragent/tree/v1.3.3) and Only get user agent name.
+This code id rewriten of [Go module for User Agent Parser V1.3.3](https://github.com/mileusna/useragent/tree/v1.3.3) and Only get user agent name.
