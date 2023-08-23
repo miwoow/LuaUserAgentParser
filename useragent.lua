@@ -34,7 +34,31 @@ local TiktokApp    = "TikTok App"
 local Twitterbot          = "Twitterbot"
 local FacebookExternalHit = "facebookexternalhit"
 
+-- structure of UserAgent
+--
+--VersionNo   {Major int, Minor int, Patch int}
+--OSVersionNo {Major int, Minor int, Patch int}
+--URL         string
+--String      string
+--Name        string
+--Version     string
+--OS          string
+--OSVersion   string
+--Device      string
+--Mobile      bool
+--Tablet      bool
+--Desktop     bool
+--Bot         bool
+
 function _M.getUserAgentName(userAgent)
+    local ua = _M.parse(userAgent)
+    return ua.Name
+end
+
+function _M.parse(userAgent)
+    local ua = {}
+    ua.Bot = false
+    ua.Tablet = false
     local tokens = _M.parseUserAgent(userAgent)
     for k, v in pairs(tokens) do
         if mstr.startswith(k, "http://") or mstr.startswith(k, "https://") then
@@ -42,180 +66,233 @@ function _M.getUserAgentName(userAgent)
         end
     end
 
-    local os = nil
-
     if tokens["Android"] ~= nil then
-        os = Android
-    end
-
-    if tokens["iPhone"] ~= nil then
-        os = IOS
-    end
-
-    if tokens["iPad"] ~= nil then
-        os = IOS
-    end
-
-    if tokens['Windows NT'] ~= nil then
-        os = Windows
-    end
-
-    if tokens['Windows Phone OS'] ~= nil then
-        os = WindowsPhone
-    end
-
-    if tokens['Macintosh'] ~= nil then
-        os = MacOS
-    end
-
-    if tokens['Linux'] ~= nil then
-        os = Linux
-    end
-
-    if tokens['Cros'] ~= nil then
-        os = ChromeOS
+        ua.OS = Android
+        ua.Tablet = string.find(string.lower(userAgent), "tablet", 1, true)
+    elseif tokens["iPhone"] ~= nil then
+        ua.OS = IOS
+        ua.Device = "iPhone"
+        ua.Mobile = true
+    elseif tokens["iPad"] ~= nil then
+        ua.OS = IOS
+        ua.Device = "iPad"
+        ua.Tablet = true
+    elseif tokens['Windows NT'] ~= nil then
+        ua.OS = Windows
+        ua.OSVersion = tokens['Windows NT'] == nil and "" or tokens['Windows NT']
+        ua.Desktop = true
+    elseif tokens['Windows Phone OS'] ~= nil then
+        ua.OS = WindowsPhone
+        ua.OSVersion = tokens['Windows Phone OS'] == nil and ""  or tokens['Windows Phone OS']
+        ua.Mobile = true
+    elseif tokens['Macintosh'] ~= nil then
+        ua.OS = MacOS
+        ua.Desktop = true
+    elseif tokens['Linux'] ~= nil then
+        ua.OS = Linux
+        ua.OSVersion = tokens[Linux] == nil and "" or tokens[Linux]
+        ua.Desktop = true
+    elseif tokens['Cros'] ~= nil then
+        ua.OS = ChromeOS
+        ua.OSVersion = tokens['CrOS'] == nil and "" or tokens['CrOS']
+        ua.Desktop = true
     end
 
     if tokens['Googlebot'] ~= nil then
-        return Googlebot
-    end
-
-    if tokens['Applebot'] ~= nil then
-        return Applebot
-    end
-
-    if tokens['Opera Mini'] ~= nil and tokens['Opera Mini'] ~= "" then
-        return OperaMini
-    end
-
-    if tokens['OPR'] ~= nil and tokens['OPR'] ~= "" then
-        return Opera
-    end
-
-    if tokens['OPT'] ~= nil and tokens['OPT'] ~= "" then
-        return OperaTouch
-    end
-
-    if tokens['OPiOS'] ~= nil and tokens['OPiOS'] ~= "" then
-        return Opera
-    end
-
-    if tokens['CriOS'] ~= nil and tokens['CriOS'] ~= "" then
-        return Chrome
-    end
-
-    if tokens['FxiOS'] ~= nil and tokens['FxiOS'] ~= "" then
-        return Firefox
-    end
-
-    if tokens['Firefox'] ~= nil and tokens['Firefox'] ~= '' then
-        return Firefox
-    end
-
-    if tokens['Vivaldi'] ~= nil and tokens['Vivaldi'] ~= '' then
-        return Vivaldi
-    end
-
-    if tokens['MSIE'] ~= nil then
-        return InternetExplorer
-    end
-
-    if tokens['EdgiOS'] ~= nil and tokens['EdgiOS'] ~= "" then
-        return Edge
-    end
-
-    if tokens['Edge'] ~= nil and tokens['Edge'] ~= '' then
-        return Edge
-    end
-
-    if tokens['Edg'] ~= nil and tokens['Edg'] ~= '' then
-        return Edge
-    end
-
-    if tokens['EdgA'] ~= nil and tokens['EdgA'] ~= '' then
-        return Edge
-    end
-
-    if tokens['bingbot'] ~= nil and tokens['bingbot'] ~= '' then
-        return Bingbot
-    end
-
-    if tokens['YandexBot'] ~= nil and tokens['YandexBot'] ~= '' then
-        return 'YandexBot'
-    end
-
-    if tokens['SamsungBrowser'] ~= nil and tokens['SamsungBrowser'] ~= '' then
-        return 'Samsung Browser'
-    end
-
-    if tokens['HeadlessChrome'] ~= nil and tokens['HeadlessChrome'] ~= '' then
-        return HeadlessChrome
-    end
-
-    if _M.existsAny(tokens, "AdsBot-Google-Mobile", "Mediapartners-Google", "AdsBot-Google") then
-        return GoogleAdsBot
-    end
-
-    if tokens['Yahoo Ad monitoring'] ~= nil then
-        return 'Yahoo Ad monitoring'
-    end
-
-    if tokens['XiaoMi'] ~= nil then
+        ua.Name = Googlebot
+        ua.Bot = true
+        ua.Mobile = _M.existsAny(tokens, "Mobile", "Mobile Safari")
+    elseif tokens['Applebot'] ~= nil then
+        ua.Name = Applebot
+        ua.Version = tokens[Applebot]
+        ua.Bot = true
+        ua.Mobile = _M.existsAny(tokens, "Mobile", "Mobile Safari")
+        ua.OS = ""
+    elseif tokens['Opera Mini'] ~= nil and tokens['Opera Mini'] ~= "" then
+        ua.Name = OperaMini
+        ua.Version = tokens[OperaMini]
+        ua.Mobile = true
+    elseif tokens['OPR'] ~= nil and tokens['OPR'] ~= "" then
+        ua.Name = Opera
+        ua.Version = tokens['OPR']
+        ua.Mobile = _M.existsAny(tokens, "Mobile", "Mobile Safari")
+    elseif tokens['OPT'] ~= nil and tokens['OPT'] ~= "" then
+        ua.Name = OperaTouch
+        ua.Version = tokens['OPT']
+        ua.Mobile = _M.existsAny(tokens, "Mobile", "Mobile Safari")
+    elseif tokens['OPiOS'] ~= nil and tokens['OPiOS'] ~= "" then
+        ua.Name = Opera
+        ua.Version = tokens['OPiOS']
+        ua.Mobile = _M.existsAny(tokens, "Mobile", "Mobile Safari")
+    elseif tokens['CriOS'] ~= nil and tokens['CriOS'] ~= "" then
+        ua.Name = Chrome
+        ua.Version = tokens['CriOS']
+        ua.Mobile = _M.existsAny(tokens, "Mobile", "Mobile Safari")
+    elseif tokens['FxiOS'] ~= nil and tokens['FxiOS'] ~= "" then
+        ua.Name = Firefox
+        ua.Version = tokens['FxiOS']
+        ua.Mobile = _M.existsAny(tokens, "Mobile", "Mobile Safari")
+    elseif tokens['Firefox'] ~= nil and tokens['Firefox'] ~= '' then
+        ua.Name = Firefox
+        ua.Version = tokens[Firefox]
+        ua.Mobile = tokens['Mobile'] == nil and false or true
+        ua.Tablet = tokens['Tablet'] == nil and false or true
+    elseif tokens['Vivaldi'] ~= nil and tokens['Vivaldi'] ~= '' then
+        ua.Name = Vivaldi
+        ua.Version = tokens[Vivaldi]
+    elseif tokens['MSIE'] ~= nil then
+        ua.Name = InternetExplorer
+        ua.Version = tokens['MSIE']
+    elseif tokens['EdgiOS'] ~= nil and tokens['EdgiOS'] ~= "" then
+        ua.Name = Edge
+        ua.Version = tokens['EdgiOS']
+        ua.Mobile = _M.existsAny(tokens, "Mobile", "Mobile Safari")
+    elseif tokens['Edge'] ~= nil and tokens['Edge'] ~= '' then
+        ua.Name = Edge
+        ua.Version = tokens['Edge']
+        ua.Mobile = _M.existsAny(tokens, "Mobile", "Mobile Safari")
+    elseif tokens['Edg'] ~= nil and tokens['Edg'] ~= '' then
+        ua.Name = Edge
+        ua.Version = tokens['Edg']
+        ua.Mobile = _M.existsAny(tokens, "Mobile", "Mobile Safari")
+    elseif tokens['EdgA'] ~= nil and tokens['EdgA'] ~= '' then
+        ua.Name = Edge
+        ua.Version = tokens['EdgA']
+        ua.Mobile = _M.existsAny(tokens, "Mobile", "Mobile Safari")
+    elseif tokens['bingbot'] ~= nil and tokens['bingbot'] ~= '' then
+        ua.Name = Bingbot
+        ua.Version = tokens['bingbot']
+        ua.Mobile = _M.existsAny(tokens, "Mobile", "Mobile Safari")
+    elseif tokens['YandexBot'] ~= nil and tokens['YandexBot'] ~= '' then
+        ua.Name = 'YandexBot'
+        ua.Version = tokens['YandexBot']
+        ua.Mobile = _M.existsAny(tokens, "Mobile", "Mobile Safari")
+    elseif tokens['SamsungBrowser'] ~= nil and tokens['SamsungBrowser'] ~= '' then
+        ua.Name = 'Samsung Browser'
+        ua.Version = tokens['SamsungBrowser']
+        ua.Mobile = _M.existsAny(tokens, "Mobile", "Mobile Safari")
+    elseif tokens['HeadlessChrome'] ~= nil and tokens['HeadlessChrome'] ~= '' then
+        ua.Name = HeadlessChrome
+        ua.Version = tokens['HeadlessChrome']
+        ua.Mobile = _M.existsAny(tokens, "Mobile", "Mobile Safari")
+        ua.Bot = true
+    elseif _M.existsAny(tokens, "AdsBot-Google-Mobile", "Mediapartners-Google", "AdsBot-Google") then
+        ua.Name = GoogleAdsBot
+        ua.Bot = true
+        ua.Mobile = ua.OS == Android or ua.OS == IOS
+    elseif tokens['Yahoo Ad monitoring'] ~= nil then
+        ua.Name = 'Yahoo Ad monitoring'
+        ua.Bot = true
+        ua.Mobile = ua.OS == Android or ua.OS == IOS
+    elseif tokens['XiaoMi'] ~= nil then
         local miui = tokens['XiaoMi']
         if mstr.startswith(miui, 'MiuiBrowser') then
-            return 'Miui Browser'
+            ua.Name = 'Miui Browser'
+            ua.Version = mstr.trimPrefix(miui, "MiuiBrowser/")
+            ua.Mobile = true
         end
-    end
-
-    if tokens['FBAN'] ~= nil then
-        return FacebookApp
-    end
-
-    if tokens['FB_IAB'] ~= nil then
-        return FacebookApp
-    end
-
-    if _M.tbStartsWith(tokens, 'Instagram') then
-        return InstagramApp
-    end
-
-    if tokens['BytedanceWebview'] ~= nil then
-        return TiktokApp
-    end
-
-    if tokens['HuaweiBrowser'] ~= nil and tokens['HuaweiBrowser'] ~= '' then
-        return 'Huawei Browser'
-    end
-
-    if tokens[Chrome] ~= nil and tokens[Safari] ~= nil then
+    elseif tokens['FBAN'] ~= nil then
+        ua.Name = FacebookApp
+        ua.Version = tokens['FBAN']
+    elseif tokens['FB_IAB'] ~= nil then
+        ua.Name = FacebookApp
+        ua.Version = tokens['FBAV'] == nil and "" or tokens['FBAV']
+    elseif _M.tbStartsWith(tokens, 'Instagram') then
+        ua.Name = InstagramApp
+        ua.Version = _M.findInstagramVersion(tokens)
+    elseif tokens['BytedanceWebview'] ~= nil then
+        ua.Name = TiktokApp
+        ua.Version = tokens['app_version'] == nil and "" or tokens['app_version']
+    elseif tokens['HuaweiBrowser'] ~= nil and tokens['HuaweiBrowser'] ~= '' then
+        ua.Name = 'Huawei Browser'
+        ua.Version = tokens['HuaweiBrowser']
+        ua.Mobile = _M.existsAny(tokens, "Mobile", "Mobile Safari")
+    elseif tokens[Chrome] ~= nil and tokens[Safari] ~= nil then
         local name = _M.findBestMatch(tokens, true)
         if name ~= '' then
-            return name
-        end
-    end
-
-    if tokens['Chrome'] ~= nil then
-        return Chrome
-    end
-
-    if tokens['Brave Chrome'] ~= nil then
-        return Chrome
-    end
-
-    if tokens['Safari'] ~= nil then
-        return Safari
-    end
-
-    if os == 'Android' and tokens['Version'] ~= nil and tokens['Version'] ~= '' then
-        return 'Android browser'
-    else
-        local name = _M.findBestMatch(tokens, false)
-        if name ~= '' then
-            return name
+            ua.Name = name
+            ua.Version = tokens[name]
         else
-            return userAgent
+            ua.Name = Chrome
+            ua.Version = tokens['Chrome']
+            ua.Mobile = _M.existsAny(tokens, "Mobile", "Mobile Safari")
+        end
+    elseif tokens['Chrome'] ~= nil then
+        ua.Name = Chrome
+        ua.Version = tokens['Chrome']
+        ua.Mobile = _M.existsAny(tokens, "Mobile", "Mobile Safari")
+    elseif tokens['Brave Chrome'] ~= nil then
+        ua.Name = Chrome
+        ua.Version = tokens['Brave Chrome']
+        ua.Mobile = _M.existsAny(tokens, "Mobile", "Mobile Safari")
+    elseif tokens['Safari'] ~= nil then
+        ua.Name = Safari
+        local v = tokens['Version']
+        if v ~= nil and v ~= "" then
+            ua.Version = v
+        else
+            ua.Version = tokens['Safari'] == nil and "" or tokens['Safari']
+        end
+        ua.Mobile = _M.existsAny(tokens, "Mobile", "Mobile Safari")
+    else
+        if ua.OS == 'Android' and tokens['Version'] ~= nil and tokens['Version'] ~= '' then
+            ua.Name = 'Android browser'
+            ua.Version = tokens['Version'] == nil and "" or tokens['Version']
+            ua.Mobile = true
+        else
+            local name = _M.findBestMatch(tokens, false)
+            if name ~= '' then
+                ua.Name = name
+                ua.Version = tokens[name] == nil and "" or tokens[name]
+            else
+                ua.Name = userAgent
+            end
+            ua.Bot = string.find(string.lower(ua.Name), "bot", 1, true) == nil and false or true
+            ua.Mobile = _M.existsAny(tokens, "Mobile", "Mobile Safari")
         end
     end
+    if ua.OS == Android then
+        ua.Mobile = true
+    end
+    if ua.Tablet then
+        ua.Mobile = false
+    end
+
+    if not ua.Bot then
+        --ua.Bot = ua.URL ~= ""
+    end
+
+    if not ua.Bot then
+        if ua.Name == Twitterbot or ua.Name == FacebookExternalHit then
+            ua.Bot = true
+        end
+    end
+    return ua
+end
+
+function _M.findInstagramVersion(tokens)
+    for k, v in pairs(tokens) do
+        if mstr.startswith(k, "Instagram") then
+            local ver = _M.findVersion(v)
+            if ver ~= nil then
+                return ver
+            else
+                local ver2 = _M.findVersion(k)
+                if ver2 ~= nil then
+                    return ver2
+                end
+            end
+        end
+    end
+    return ""
+end
+
+function _M.findVersion(str)
+    local ver = string.match(str, '[_%d%.]+')
+    if ver ~= nil then
+        return string.gsub(ver, " ", ".")
+    end
+    return nil
 end
 
 function _M.findBestMatch(tokens, withVerOnly)
