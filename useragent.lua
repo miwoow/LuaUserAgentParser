@@ -38,7 +38,7 @@ function _M.getUserAgentName(userAgent)
     local tokens = _M.parseUserAgent(userAgent)
     for k, v in pairs(tokens) do
         if mstr.startswith(k, "http://") or mstr.startswith(k, "https://") then
-            table.remove(tokens, k)
+            tokens[k] = nil
         end
     end
 
