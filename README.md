@@ -10,7 +10,7 @@ This code id rewriten of [Go module for User Agent Parser V1.3.3](https://github
 
 # Example
 
-```
+```lua
 --
 local useragent = require("useragent")
 
