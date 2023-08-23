@@ -62,7 +62,9 @@ function _M.parse(userAgent)
     local tokens = _M.parseUserAgent(userAgent)
     for k, v in pairs(tokens) do
         if mstr.startswith(k, "http://") or mstr.startswith(k, "https://") then
+            ua.URL = k
             tokens[k] = nil
+            break
         end
     end
 
@@ -259,7 +261,7 @@ function _M.parse(userAgent)
     end
 
     if not ua.Bot then
-        --ua.Bot = ua.URL ~= ""
+        ua.Bot = ua.URL ~= nil and ua.URL ~= ""
     end
 
     if not ua.Bot then

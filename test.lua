@@ -1,13 +1,12 @@
 --
 local mstr = require 'mystring'
 
-local ua = 'apifox/.0.0 (https://www.apifox.cn)'
 
 local useragent = require("useragent")
 
-print(useragent.getUserAgentName(ua))
-
-local tests = {"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/603.3.8 (KHTML, like Gecko) Version/10.1.2 Safari/603.3.8",
+local tests = {
+    "apifox/1.0.0 (https://www.apifox.cn)",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/603.3.8 (KHTML, like Gecko) Version/10.1.2 Safari/603.3.8",
         "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.115 Safari/537.36",
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
         "Mozilla/5.0 (iPhone; CPU iPhone OS 10_3_2 like Mac OS X) AppleWebKit/603.2.4 (KHTML, like Gecko) Version/10.0 Mobile/14F89 Safari/602.1",
@@ -21,5 +20,7 @@ local tests = {"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/603.
 --local tests = {"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"}
 
 for _, v in pairs(tests) do
-print(useragent.getUserAgentName(v))
+    local info = useragent.parse(v)
+    print(info.URL)
+    print(info.Name..', '..info.Version.. ','..tostring(info.Bot))
 end
